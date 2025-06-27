@@ -3,8 +3,8 @@
 ---
 
 ## Menu
-- [1. Challenge: Contexto y Objetivos](#challenge-contexto-y-objetivos)
-  - [1.1 Objetivo](#objetivo)
+- [1. Challenge: Contexto y Objetivos](#1-challenge-contexto-y-objetivos)
+  - [1.1 Objetivo](#11-objetivo)
   - [1.2 Enunciado](#12-enunciado)
   - [1.3 Bonus](#13-bonus)
 - [2. Overlay Script Setup](#overlay-script-setup)
@@ -123,16 +123,18 @@ En esta sección se proponen desafíos adicionales para quienes deseen profundiz
 
 ```sh
 python3 overlay-setup.py
+# o 
+python overlay-setup.py
+
 ```
 
 El script te va a guiar paso a paso con preguntas:
 
 - ¿Qué environment es? (`dev`, `prod`, etc.)
 - ¿El nombre del environment se usa como namespace?
-- Nombre del ConfigMap (¡no modificar si usás behavior: replace!)
-- Nombre del deployment base, contenedor, imagen, réplicas, etc.
-- Si usás patch de ingress: clase, host y path
+- Si usás ingress: clase, host y path
 - Si usás HPA: min/max réplicas y CPU averageUtilization
+- Mensaje Personalizado, solo para test al abrir la aplicacion.
 
 Cuando termina:
 

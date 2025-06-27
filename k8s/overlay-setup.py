@@ -14,10 +14,10 @@ def pregunta_numero(mensaje, valor_default):
 def print_help():
     print("""
 Uso:
-  python3 kustom-wizard.py                            # Ejecuta el modo interactivo para crear overlays y .env
-  python3 kustom-wizard.py --delete <env> | -d <env>  # Elimina el overlay <env>
-  python3 kustom-wizard.py --list | -l                # Lista todos los overlays existentes
-  python3 kustom-wizard.py --help | -h                # Muestra esta ayuda
+  python3 overlay-setup.py                            # Ejecuta el modo interactivo para crear overlays y .env
+  python3 overlay-setup.py --delete <env> | -d <env>  # Elimina el overlay <env>
+  python3 overlay-setup.py --list | -l                # Lista todos los overlays existentes
+  python3 overlay-setup.py --help | -h                # Muestra esta ayuda
 """)
 
 # Permitir flags: --delete/-d, --list/-l, --help/-h
@@ -30,7 +30,7 @@ if len(sys.argv) == 3 and sys.argv[1] in ("--delete", "-d"):
     overlay_path = os.path.join("overlays", env)
     if os.path.isdir(overlay_path):
         # Preguntar si también quiere eliminar los recursos del cluster
-        borrar_k8s = input(f"¿Querés eliminar TAMBIÉN los recursos de Kubernetes para este overlay? (kubectl delete -k {overlay_path}) (s/n): ").strip().lower()
+        borrar_k8s = input(f"¿Querés eliminar TAMBIÉN los recursos desplegados en el cluster Kubernetes para este overlay? (kubectl delete -k {overlay_path}) (s/n): ").strip().lower()
         if borrar_k8s in ["s", "y"]:
             exit_code = os.system(f"kubectl delete -k {overlay_path}")
             if exit_code == 0:
@@ -97,8 +97,8 @@ app_env = environment
 
 env_file = f".env.{environment}"
 
-use_ingress_patch = input("¿Va a usar Ingress Patch? (s/n): ").strip().lower() in ["s", "y"]
-use_hpa = input("¿Va a usar HPA? (s/n): ").strip().lower() in ["s", "y"]
+use_ingress_patch = input("¿Va a usar Ingress? (s/n): ").strip().lower() in ["s", "y"]
+use_hpa = input("¿Va a usar Autoscaler (HPA)? (s/n): ").strip().lower() in ["s", "y"]
 custom_message = input("Mensaje personalizado (CUSTOM_MESSAGE): ").strip()
 
 if not use_hpa:
@@ -109,33 +109,17 @@ if not use_hpa:
         print("Por favor, ingresá un número entero positivo.")
 else:
     replicas = "1"
-    min_replicas = pregunta_numero("MinReplicas (para HPA)", 3)
-    max_replicas = pregunta_numero("MaxReplicas (para HPA)", 7)
-    cpu_average_utilization = pregunta_numero("CPU averageUtilization (%) (para HPA)", 50)
+    min_replicas = pregunta_numero("MinReplicas (para Autoscaler (HPA))", 3)
+    max_replicas = pregunta_numero("MaxReplicas (para Autoscaler (HPA))", 7)
+    cpu_average_utilization = pregunta_numero("CPU averageUtilization (%) (para Autoscaler (HPA))", 50)
 
 if use_ingress_patch:
-    ingress_class_name = input("Nombre de ingressClass (por ejemplo: nginx): ").strip() or "nginx"
-    host = input("Host para la regla de Ingress (por ejemplo: example.local): ").strip() or "example.local"
-    path = input("Path para el Ingress (por ejemplo: /): ").strip() or "/"
+    print(f"\n--- Configuración de Ingress---")
+    ingress_class_name = input("ingressClass (default: nginx): ").strip() or "nginx"
+    host = input("FQDN (default: example.local): ").strip() or "example.local"
+    path = input("Path (default: /): ").strip() or "/"
 
-
-print(f"\n--- Resumen de configuración ---")
-print(f"NAMESPACE: {namespace}")
-print(f"APP_ENV: {app_env}")
-print(f"CUSTOM_MESSAGE: {custom_message}")
-print(f"USE_HPA: {'true' if use_hpa else 'false'}")
-print(f"USE_INGRESS_PATCH: {'true' if use_ingress_patch else 'false'}")
-if not use_hpa:
-    print(f"REPLICAS: {replicas}")
-else:
-    print(f"MIN_REPLICAS: {min_replicas}")
-    print(f"MAX_REPLICAS: {max_replicas}")
-    print(f"CPU_AVERAGE_UTILIZATION: {cpu_average_utilization}")
-if use_ingress_patch:
-    print(f"INGRESS_CLASS_NAME: {ingress_class_name}")
-    print(f"HOST: {host}")
-    print(f"PATH: {path}")
-print("-----------------------------\n")
+docker_image_tag = input("Docker image tag (ejemplo: 1.0.3): ").strip() or "latest"
 
 if custom_message.startswith('"') and custom_message.endswith('"'):
     custom_message = custom_message[1:-1]
@@ -158,6 +142,7 @@ with open(env_file, "w") as f:
         f.write(f"INGRESS_CLASS_NAME={ingress_class_name}\n")
         f.write(f"HOST={host}\n")
         f.write(f"PATH={path}\n")
+    f.write(f"DOCKER_IMAGE_TAG={docker_image_tag}\n")
 
 print(f"\nArchivo {env_file} generado con éxito:")
 with open(env_file) as f:
@@ -227,6 +212,7 @@ if run_overlay in ["s", "y"]:
         with open(patch_deployment_template) as f:
             patch_content = f.read()
         patch_content = patch_content.replace("${REPLICAS}", replicas)
+        patch_content = patch_content.replace("${DOCKER_IMAGE_TAG}", docker_image_tag)
         # Si parametrizás más cosas, reemplazá también esas variables acá
         with open(patch_deployment_dest, "w") as f:
             f.write(patch_content)
