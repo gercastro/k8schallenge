@@ -17,5 +17,9 @@
     ?>
   </h2>
   <p>El hostname de este contenedor es: <strong><?php echo gethostname(); ?></strong></p>
+    <footer>
+    <p>Fecha actual: <?php echo date("d/m/Y H:i:s"); ?></p>
+    <p>Diseñado por Daniel Passarelli</p>
+  </footer>
 </body>
 </html>
