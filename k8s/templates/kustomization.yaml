@@ -1,0 +1,16 @@
+namespace: ${NAMESPACE}
+
+resources:
+  - ../../base
+${HP_RESOURCES}
+
+configMapGenerator:
+  - name: nginx-app-config
+    behavior: replace
+    literals:
+      - APP_ENV=${APP_ENV}
+      - CUSTOM_MESSAGE=${CUSTOM_MESSAGE}
+
+patches:
+  - path: patch-deployment.yaml
+${INGRES_PATCH}

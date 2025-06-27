@@ -1,0 +1,12 @@
+# k8s/base/kustomization.yaml
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: nginx-app-config
+    literals:
+      - APP_ENV=default
+      - CUSTOM_MESSAGE=Default message

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-app
+spec:
+  replicas: 1   # Kustomize overlay lo sobreescribe
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx
+          image: dapasa/nginx-custom-html
+          ports:
+            - containerPort: 80
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: nginx-app-config
+                  key: APP_ENV
+            - name: CUSTOM_MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: nginx-app-config
+                  key: CUSTOM_MESSAGE
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"

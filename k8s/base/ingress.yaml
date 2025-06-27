@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-app-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: example.local    # Cambiá esto por tu dominio real o usalo en /etc/hosts para pruebas
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-app
+                port:
+                  number: 80
