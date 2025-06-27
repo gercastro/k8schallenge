@@ -7,6 +7,11 @@ spec:
   selector:
     matchLabels:
       app: nginx-app
-  containers:
-  - name: nginx
-    image: dapasa/nginx-custom-html:${DOCKER_IMAGE_TAG}
+  template:
+      metadata:
+        labels:
+          app: nginx-app
+      spec:
+        containers:
+        - name: nginx
+          image: dapasa/nginx-custom-html:${DOCKER_IMAGE_TAG}

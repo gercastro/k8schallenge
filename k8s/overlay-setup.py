@@ -119,7 +119,7 @@ if use_ingress_patch:
     host = input("FQDN (default: example.local): ").strip() or "example.local"
     path = input("Path (default: /): ").strip() or "/"
 
-docker_image_tag = input("Docker image tag (ejemplo: 1.0.3): ").strip() or "latest"
+docker_image_tag = input("Docker image tag (default: latest): ").strip() or "latest"
 
 if custom_message.startswith('"') and custom_message.endswith('"'):
     custom_message = custom_message[1:-1]
