@@ -14,14 +14,20 @@
   - [2.5 Overlay Manual Setup (sin script)](#25-overlay-manual-setup-sin-script)
   - [2.6 Detalles de las variables y templates](#26-detalles-de-las-variables-y-templates)
   - [2.7 Parámetros soportados por el script](#27-parámetros-soportados-por-el-script)
-- [3. CI/CD Pipeline](#cicd-pipeline)
+- [3. CI/CD Pipeline](#3-cicd-pipeline)
   - [3.1 Configuración](#31-configuración)
   - [3.2 Uso](#32-uso)
   - [3.3 Flujo del pipeline](#33-flujo-del-pipeline)
-- [4. Buenas prácticas y tips](#4-buenas-prácticas-y-tips)
-- [5. Ejemplo de estructura final del repositorio](#5-ejemplo-de-estructura-final-del-repositorio)
-- [6. Ejemplo de template `kustomization.yaml`](#6-ejemplo-de-template-kustomizationyaml)
-- [7. Notas finales](#7-notas-finales)
+- [4. Kubernetes Monitoring Stack - Helm](#4-kubernetes-monitoring-stack---helm)
+  - [4.1 Requisitos](#41-requisitos)
+  - [4.2 Archivos necesarios](#42-archivos-necesarios)
+  - [4.3 Instalación de dependencias Python](#43-instalación-de-dependencias-python)
+  - [4.4 Ejecución](#44-ejecución)
+  - [4.5 Eliminación](#45-eliminación)
+- [5. Buenas prácticas y tips](#5-buenas-prácticas-y-tips)
+- [6. Ejemplo de estructura final del repositorio](#6-ejemplo-de-estructura-final-del-repositorio)
+- [7. Ejemplo de template `kustomization.yaml`](#7-ejemplo-de-template-kustomizationyaml)
+- [8. Notas finales](#8-notas-finales)
 
 # 1. Challenge Contexto y Objetivos
 
@@ -149,6 +155,7 @@ python3 overlay-setup.py --delete <env>
 # o
 python3 overlay-setup.py -d <env>
 ```
+> [!tip] La ejecucion del script con python3 es de uso ilustrativo. Utilizar python3 o python segun lo configurado en el entorno que se va a utilizar el script.
 
 - Borra la carpeta del overlay, el archivo `.env.<env>`, y si querés, elimina también los recursos en el clúster (`kubectl delete -k overlays/<env>`)
 - Si la carpeta `overlays/` queda vacía, la borra automáticamente.
@@ -160,6 +167,9 @@ python3 overlay-setup.py --list
 # o
 python3 overlay-setup.py -l
 ```
+
+> [!tip] La ejecucion del script con python3 es de uso ilustrativo. Utilizar python3 o python segun lo configurado en el entorno que se va a utilizar el script.
+
 [Volver](#menu)
 
 
@@ -216,7 +226,6 @@ Debes configurar los siguientes **Secrets** en tu repositorio de GitHub:
 |-----------------------|------------------------------------------|
 | `DOCKERHUB_USERNAME`  | Tu usuario de Docker Hub                 |
 | `DOCKERHUB_TOKEN`     | Token de acceso (no tu password normal)  |
-| `GITHUB_TOKEN`        | Token de GitHub (predefinido en Actions) |
 
 [Volver](#menu)
 
@@ -254,7 +263,74 @@ Debes configurar los siguientes **Secrets** en tu repositorio de GitHub:
 
 ---
 
-## 4. Buenas prácticas y tips
+## 4. Kubernetes Monitoring Stack - Helm
+
+Automatiza el despliegue de Prometheus, Grafana y dashboards personalizados en tu cluster Kubernetes usando Helm y Python.
+
+## 4.1 Requisitos
+
+- Cluster Kubernetes (Docker Desktop, Minikube, etc.) con `kubectl` configurado
+- `helm` instalado y accesible en PATH
+- Python 3.7+ y `pip` instalados
+
+[Volver](#menu)
+
+## 4.2 Archivos necesarios
+
+- `setup_monitoring.py` (script principal)
+- `values-custom.yaml` (configuración Prometheus extra scrape)
+- `grafana-ingress.yaml` (manifiesto Ingress para Grafana)
+- `k8s-dashboard.json` (JSON del dashboard que desees importar)
+- `requirements.txt` (dependencias Python)
+
+[Volver](#menu)
+
+## 4.3 Instalación de dependencias Python
+
+```bash
+pip install -r requirements.txt
+```
+[Volver](#menu)
+
+## 4.4 Ejecución
+
+```bash
+python3 setup_monitoring.py
+```
+> [!tip] La ejecucion del script con python3 es de uso ilustrativo. Utilizar python3 o python segun lo configurado en el entorno que se va a utilizar el script.
+
+
+El script:
+- Agrega los repos Helm y deploya Prometheus, Grafana y kube-state-metrics
+- Aplica el manifiesto de Ingress para Grafana
+- Espera que Grafana esté disponible vía ingress
+- Configura el datasource de Prometheus en Grafana
+- Importa el dashboard de Kubernetes
+
+[Volver](#menu)
+
+## 4.5 Eliminación
+
+Para la eliminación de prometheus y grafana:
+
+```bash
+python3 setup_monitoring.py -d
+```
+> [!tip] La ejecucion del script con python3 es de uso ilustrativo. Utilizar python3 o python segun lo configurado en el entorno que se va a utilizar el script.
+
+Esto elimina:
+- Las releases de Helm de Prometheus, Grafana y kube-state-metrics en el namespace que se haya indicado
+- Los ingress de Grafana y Prometheus por nombre (no depende del archivo)
+
+```bash
+helm uninstall prometheus -n monitoring
+helm uninstall grafana -n monitoring
+helm uninstall kube-state-metrics -n monitoring
+kubectl delete -f grafana-ingress.yaml -n monitoring
+```
+[Volver](#menu)
+
+## 5. Buenas prácticas y tips
 
 - Utilizar un enfoque GitOps para manejar los despliegues en Kubernetes, versionando todos los manifiestos en los repositorios y automatizando los despliegues con herramientas como ArgoCD. Esto permite mantener el estado del clúster sincronizado con lo que está en Git y facilita los rollbacks.
 - Utilizar la misma estructura de carpetas para todos los entornos.
@@ -267,7 +343,7 @@ Debes configurar los siguientes **Secrets** en tu repositorio de GitHub:
 
 ---
 
-## 5. Ejemplo de estructura final del repositorio
+## 6. Ejemplo de estructura final del repositorio
 
 ```
 .github/
@@ -301,7 +377,7 @@ README.MD
 
 ---
 
-## 6. Ejemplo de template `kustomization.yaml`
+## 7. Ejemplo de template `kustomization.yaml`
 
 ```yaml
 namespace: ${NAMESPACE}
@@ -323,7 +399,7 @@ ${PATCHES}
 
 ---
 
-## 7. Notas finales
+## 8. Notas finales
 
 - El script está pensado para facilitar equipos que repiten overlays y no quieren copiar/pegar ni olvidarse parámetros clave.
 - Toda modificación manual es posible, pero asegurate de no romper la relación entre base y overlays (especialmente los nombres de recursos).
